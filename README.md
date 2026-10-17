@@ -76,7 +76,6 @@ The project contains several previously saved evaluation results:
 
 | Experiment | Random Forest | MLP |
 
-|---|---:|---:|
 
 | Hybrid validation | 99.38% | 98.96% |
 
