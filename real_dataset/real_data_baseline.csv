@@ -1,0 +1,4 @@
+capture_label,file,valid_windows,dominant_prediction,dominant_share_percent,mean_max_probability_percent
+noise,real_dataset/real_noise_features.csv,8976,wifi_like,99.96657754010695,96.26314616755793
+wifi_like,real_dataset/real_wifi_features.csv,25000,wifi_like,99.924,96.31298666666666
+bluetooth_like,real_dataset/real_bluetooth_features.csv,18056,wifi_like,98.51019051838723,84.9921540392852

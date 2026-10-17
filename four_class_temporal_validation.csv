@@ -1,0 +1,4 @@
+train_fraction,test_start_fraction,test_end_fraction,train_rows,test_rows,accuracy,macro_f1
+0.5,0.5,0.7,1000,400,0.7575,0.757652417027417
+0.6,0.6,0.8,1200,400,0.71,0.707335801900028
+0.7,0.7,0.9,1400,400,0.69,0.6873300310800311

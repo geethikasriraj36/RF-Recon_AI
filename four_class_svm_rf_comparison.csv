@@ -1,0 +1,3 @@
+model,accuracy,macro_f1
+Random Forest - larger leaves,0.6983333333333334,0.6936844257448336
+RBF SVM - scaled,0.6733333333333333,0.6760277459799413

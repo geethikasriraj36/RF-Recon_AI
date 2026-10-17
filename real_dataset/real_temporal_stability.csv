@@ -1,0 +1,7 @@
+expected_capture_label,segment,window_count,dominant_prediction,dominant_share_percent
+noise,First half,4488,wifi_like,99.9777183600713
+noise,Second half,4488,wifi_like,99.9554367201426
+wifi_like,First half,12500,wifi_like,99.90400000000001
+wifi_like,Second half,12500,wifi_like,99.944
+bluetooth_like,First half,9028,wifi_like,98.49357554275588
+bluetooth_like,Second half,9028,wifi_like,98.5268054940186

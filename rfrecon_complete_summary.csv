@@ -1,0 +1,19 @@
+parameter,value
+Capture file,real_wifi_capture_03.dat
+Total I/Q samples,17727488
+Sample rate,20.00 MS/s
+Center frequency,2.400000 GHz
+Peak frequency,2.407434 GHz
+Frequency offset,+7.434054 MHz
+Relative power,-33.01 dB
+Peak PSD,67.27 dB
+Occupied bandwidth,19.821 MHz
+Window size,4096
+Number of windows,4328
+RF dominant class,wifi_like
+RF window agreement,100.00%
+RF average confidence,93.53%
+MLP dominant class,wifi_like
+MLP window agreement,100.00%
+MLP average confidence,99.56%
+RF-MLP agreement,100.00%

@@ -1,0 +1,5 @@
+feature_set,features,accuracy_percent,macro_f1
+All 8 features,8,56.67,0.5617
+Spectral shape only,5,52.0,0.5157
+Without amplitude and variance,6,51.78,0.5177
+Frequency and shape only,4,51.33,0.5089

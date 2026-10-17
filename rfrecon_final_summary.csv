@@ -1,0 +1,18 @@
+metric,value
+Capture file,real_wifi_capture_03.dat
+Total samples,17727488
+Sample rate,20.00 MS/s
+Center frequency,2.400 GHz
+Window size,4096
+Number of windows,4328
+RF dominant class,wifi_like
+RF window agreement,100.00%
+RF average confidence,93.53%
+RF maximum confidence,100.00%
+RF minimum confidence,58.00%
+MLP dominant class,wifi_like
+MLP window agreement,100.00%
+MLP average confidence,99.56%
+MLP maximum confidence,99.97%
+MLP minimum confidence,51.57%
+RF vs MLP agreement,100.00%

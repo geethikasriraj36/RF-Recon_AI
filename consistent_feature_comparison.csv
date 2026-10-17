@@ -1,0 +1,5 @@
+feature_set,feature_count,accuracy_percent,macro_f1
+All 10 features,10,99.36,0.9936
+Remove constant power features,8,99.36,0.9936
+Time-domain features only,2,59.36,0.5923
+Spectral features only,6,99.04,0.9904

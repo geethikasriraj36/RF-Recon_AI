@@ -1,0 +1,11 @@
+Feature,Importance
+peak_to_average_ratio,0.2770835358450009
+spectral_centroid_normalized,0.17412627801005345
+occupied_bandwidth_normalized,0.16020932044809436
+peak_amplitude,0.13572690149163943
+spectral_flatness,0.11814561317585288
+spectral_bandwidth_normalized,0.10677394578237338
+variance,0.020121804680395827
+peak_frequency_normalized,0.007812600566589773
+rms,0.0
+mean_power,0.0

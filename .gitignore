@@ -1,0 +1,79 @@
+# Python virtual environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Raw SDR recordings — keep originals locally
+real_dataset/*.dat
+real_dataset/**/*.dat
+real_dataset/**/*.sigmf-data
+
+# Temporary captures and generated large files
+real_dataset/pluto_capture_*.dat
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary logs
+*.log
+
+
+# All raw SDR recordings, wherever they are stored
+*.dat
+*.sigmf-data
+
+# Downloaded archives and duplicate source bundles
+*.zip
+
+# Accidental command-created files
+/notepad
+/notepad *
+/{t}
+
+# Local temporary captures
+real_dataset/pluto_capture_*.dat
+
+
+# Raw SDR captures anywhere in the project
+*.dat
+*.sigmf-data
+
+# Downloaded dataset archives
+*.zip
+
+# Generated capture folders and bulky datasets
+real_pluto_data/
+real_wifi_data/
+real_wifi_dataset/
+realistic_rf_data/
+robust_training_data/
+stress_test_data/
+generated_data/
+
+# Accidental files
+/notepad
+/notepad *
+/{t}
+
+# Bulk generated NumPy test samples
+external_test_data/
+real_dataset/**/*.npy
+``# Generated datasets and prediction exports
+real_dataset/real_wifi_*.csv
+real_dataset/real_bluetooth_*.csv
+real_dataset/real_noise_*.csv
+real_dataset/pluto_four_class_predictions.csv

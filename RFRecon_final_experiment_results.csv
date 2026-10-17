@@ -1,0 +1,5 @@
+Experiment,Dataset,Samples,Result,Average Confidence
+Robust Synthetic Validation,Synthetic RF,500,97.84%,—
+Hybrid Model Validation,Synthetic + Real RF,480,99.38%,—
+Unseen Real PlutoSDR Wi-Fi,Unseen Real Wi-Fi,100,100.00%,—
+Real PlutoSDR Capture,Live/Recorded PlutoSDR,4328,100.00% window agreement,94.50%

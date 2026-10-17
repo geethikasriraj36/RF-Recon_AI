@@ -1,0 +1,52 @@
+RFRecon Dataset Integrity Audit
+Date: 2026-10-16
+
+1. FOUR-CLASS BASELINE DATASET
+File: four_class_baseline_features.csv
+Rows: 2,000
+Classes: noise, wifi_like, bluetooth_like, cellular_like
+Rows per class: 500
+Columns: 15
+Expected 10 feature columns: present in correct order
+Feature values: all finite
+Duplicate feature rows: 0
+Missing metadata: configured_center_frequency_hz, 1,500 values
+
+2. IEEE 802.15.4 / 6LoWPAN REFERENCE FEATURES
+File: ieee802154_6lowpan_features.csv
+Rows: 500
+Class label: ieee802154_6lowpan
+Source capture: 6lowpan_ping.dat
+Unique capture IDs: 1
+Columns: 23
+Expected 10 feature columns: present in correct order
+Feature values: all finite
+Duplicate feature rows: 0
+Missing metadata: rf_bandwidth_hz, 500 values
+
+3. PROVENANCE AND ACQUISITION LIMITATIONS
+Sample rate recorded in CSV: 4,000,000 samples/s (unverified)
+Configured center frequency recorded in CSV: 2,415,000,000 Hz (unverified for this capture)
+RF bandwidth: unknown
+Capture gain: unknown
+Data origin: external_real_iq
+Protocol status: IEEE 802.15.4 / 6LoWPAN source; Zigbee unverified
+
+4. REFERENCE PCAP
+File: 6lowpan_ping.pcap
+Size: 1,998 bytes
+Format: Classic PCAP, version 2.4
+Link type: 195 (IEEE 802.15.4 with FCS)
+Packet records: 14
+Packet sizes: 125 bytes each
+Malformed records: 0
+Trailing bytes: 0
+Timestamp span: 6.01492 seconds
+
+5. DECISIONS
+- Preserve unknown metadata as unknown; do not fabricate acquisition settings.
+- Keep the fifth-class feature CSV separate from the four-class training dataset.
+- Do not claim Zigbee classification from IEEE 802.15.4 link type alone.
+- Treat 500 windows from one recording as one capture, not 500 independent captures.
+- Verify the IQ sample rate and the correspondence between the IQ file and PCAP before using the fifth class in definitive model evaluation.
+- Do not retrain or overwrite the existing four-class model during this audit.

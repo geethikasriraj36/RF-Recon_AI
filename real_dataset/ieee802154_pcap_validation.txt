@@ -1,0 +1,21 @@
+RFRecon — IEEE 802.15.4 Reference PCAP Validation
+Date: 2026-10-16
+
+File: real_dataset/6lowpan_ping.pcap
+File size: 1,998 bytes
+Format: Classic PCAP
+PCAP version: 2.4
+Link type: 195 (IEEE 802.15.4 with FCS)
+
+Validation results:
+- Packet records: 14
+- Captured packet sizes: 125 bytes each
+- Malformed records detected: 0
+- Trailing bytes: 0
+- Timestamp span: 6.01492 seconds
+
+Interpretation:
+The PCAP has a structurally valid sequence of 14 equally sized packet records and declares IEEE 802.15.4 frames with FCS.
+
+Limitations:
+This validates the PCAP structure and declared link type only. It does not independently verify the raw IQ recording's sample rate, center frequency, RF bandwidth, capture settings, or exact correspondence to the decoded packets. Zigbee application-layer identification remains unverified.

@@ -1,0 +1,6 @@
+Experiment,Dataset,Samples/Windows,Random Forest (%),MLP (%)
+Hybrid Validation,Synthetic + Real PlutoSDR,480,99.38,98.96
+Unseen Real Wi-Fi,100 unseen real PlutoSDR samples,100,100.0,100.0
+Real PlutoSDR Capture 02,Real PlutoSDR Wi-Fi capture,12616,99.95,99.82
+Real PlutoSDR Capture 03,Real PlutoSDR Wi-Fi capture,4328,100.0,100.0
+Low-SNR Stress Test,Synthetic low-SNR RF,2500,97.84,79.08

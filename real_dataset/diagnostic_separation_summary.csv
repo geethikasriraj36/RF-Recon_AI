@@ -1,0 +1,3 @@
+model,chronological_holdout_accuracy
+Random Forest,0.5187059577194106
+Logistic Regression,0.42709801409352977

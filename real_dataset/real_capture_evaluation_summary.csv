@@ -1,0 +1,4 @@
+Capture,Expected_Class,RF_Prediction,RF_Confidence_Percent,MLP_Prediction,MLP_Confidence_Percent,Model_Agreement_Percent,Assessment
+Real Noise 01,noise,wifi_like,96.28,wifi_like,99.45,99.73,Incorrect class prediction
+Real WiFi 01,wifi_like,wifi_like,96.36,wifi_like,99.45,98.86,Expected class predicted
+Real Bluetooth 01,bluetooth_like,wifi_like,85.62,wifi_like,98.79,94.89,Incorrect class prediction
