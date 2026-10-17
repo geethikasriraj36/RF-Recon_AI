@@ -9,7 +9,7 @@ METADATA_FILE = r"real_dataset\real_cellular_dataset.csv"
 WINDOW_SIZE = 4096
 NUM_WINDOWS = 500
 
-CENTER_FREQ = 1.856e9
+CENTER_FREQ = 1.872e9
 SAMPLE_RATE = 20e6
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)

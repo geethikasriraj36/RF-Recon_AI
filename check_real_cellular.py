@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 FILE = r"real_dataset\real_cellular_01.dat"
 
 SAMPLE_RATE = 20e6
-CENTER_FREQ = 1.856e9
+CENTER_FREQ = 1.872e9
 
 # Read a manageable portion of the capture
 x = np.memmap(FILE, dtype=np.complex64, mode="r")
