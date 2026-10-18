@@ -155,6 +155,10 @@ The confusion matrix is shown below. Rows represent actual synthetic labels, and
 
 The model correctly classified 496 out of 500 synthetic test rows.
 
+![Five-Class Synthetic Evaluation Confusion Matrix](rfrecon_five_class_synthetic_confusion_matrix.png)
+
+*Note: This confusion matrix represents synthetic test data only and does not establish real-world RF classification accuracy.*
+
 **Interpretation:** These results demonstrate performance on the particular synthetic dataset and split. They do not establish 99.20% accuracy on real-world RF signals. The synthetic data has limitations, including normalized signal power, and independent-capture validation remains necessary.
 
 ### PlutoSDR dashboard checks
