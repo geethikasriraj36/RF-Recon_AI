@@ -1,301 +1,695 @@
-# RFRecon_AI — AI-Based RF Signal Classification
+# RFRecon AI --- Software-Defined Radio Signal Classification
 
-## Overview
+> **Analyze complex I/Q samples, extract RF features, and compare
+> machine-learning predictions---while keeping dataset provenance and
+> evaluation limitations visible.**
 
-RFRecon_AI is a Software-Defined Radio (SDR) project that analyzes complex in-phase and quadrature (I/Q) samples and extracts signal features for radio-frequency classification.
+RFRecon AI is an experimental software-defined radio (SDR) project for
+exploring radio-frequency (RF) signal classification from complex
+in-phase/quadrature (I/Q) samples. The project combines signal
+windowing, time-domain and spectral feature extraction, saved
+machine-learning classifiers, PlutoSDR capture analysis, stress testing,
+evaluation utilities, and a Streamlit dashboard.
 
-The project combines machine-learning models, synthetic RF datasets, PlutoSDR capture analysis, feature extraction, stress testing, and evaluation utilities.
+The project currently explores five configured signal categories:
+`noise`, `wifi_like`, `bluetooth_like`, `zigbee_like`, and
+`cellular_like`.
 
-The system explores classification of signals belonging to the following categories:
+**Important:** A model prediction is not proof that a particular
+protocol is present. Results depend on representative data,
+independently verified labels, and a consistent feature pipeline. Some
+real-capture labels and evaluation results remain unverified; this
+repository therefore treats RFRecon as an experimental research and
+demonstration system, not a production-grade protocol-identification
+tool.
 
-- Bluetooth-like
-- Cellular-like
-- Noise
-- Wi-Fi-like
-- Zigbee-like
+------------------------------------------------------------------------
 
-**Important:** Classification results are model predictions, not proof that a particular radio protocol is present. Reliable real-world identification requires independently verified signal labels and a consistent feature-extraction pipeline.
+## Table of Contents
+
+-   [Problem Statement](#problem-statement)
+-   [Objectives](#objectives)
+-   [Key Features](#key-features)
+-   [System Architecture](#system-architecture)
+-   [Signal Processing Pipeline](#signal-processing-pipeline)
+-   [Feature Set](#feature-set)
+-   [Machine-Learning Models](#machine-learning-models)
+-   [Streamlit Dashboard](#streamlit-dashboard)
+-   [Dataset and Data Organization](#dataset-and-data-organization)
+-   [Evaluation Results Already
+    Present](#evaluation-results-already-present)
+-   [Validation Limitations](#validation-limitations)
+-   [Project Structure and Important
+    Files](#project-structure-and-important-files)
+-   [Technology Stack](#technology-stack)
+-   [Installation on Windows](#installation-on-windows)
+-   [Run the Dashboard](#run-the-dashboard)
+-   [Run the Batch Prediction Script](#run-the-batch-prediction-script)
+-   [Reproducibility and Safe
+    Evaluation](#reproducibility-and-safe-evaluation)
+-   [Current Status and Next Steps](#current-status-and-next-steps)
+-   [Limitations](#limitations)
+-   [Conclusion](#conclusion)
+
+------------------------------------------------------------------------
+
+## Problem Statement
+
+Wireless environments contain signals with different characteristics,
+bandwidths, modulation patterns, power levels, and temporal behavior.
+Inspecting raw I/Q captures manually can be difficult, particularly when
+comparing many windows or multiple capture files.
+
+RFRecon explores a software-based workflow that converts I/Q samples
+into measurable features and uses trained classifiers to estimate which
+configured signal category a window resembles. It also provides analysis
+and visualization tools to compare predictions and inspect model
+behavior.
+
+This is a classification and analysis experiment. It does not
+independently establish a transmitter's identity, prove protocol
+compliance, or guarantee reliable identification in an unknown RF
+environment.
 
 ## Objectives
 
-- Analyze captured I/Q samples using fixed-size windows.
-- Extract time-domain and frequency-domain signal features.
-- Train and evaluate machine-learning classifiers.
-- Analyze existing SDR captures and newly acquired PlutoSDR samples.
-- Compare synthetic-data performance with real-capture observations.
-- Evaluate classification performance using accuracy, precision, recall, F1-score, and confusion matrices.
-- Identify limitations in dataset quality, capture metadata, and generalization.
+-   Process complex I/Q data in fixed-size windows.
+-   Calculate time-domain and frequency-domain features.
+-   Compare predictions from Random Forest and Multi-Layer Perceptron
+    (MLP) models.
+-   Examine synthetic data and existing SDR captures.
+-   Inspect model behavior under selected stress conditions.
+-   Summarize existing evaluations and model comparisons.
+-   Provide a local dashboard for exploring available results.
+-   Make data provenance, label uncertainty, and evaluation limitations
+    explicit.
+
+## Key Features
+
+-   **I/Q window analysis:** Supports workflows using fixed-size sample
+    windows; 4,096 complex samples are used by several existing feature
+    datasets.
+-   **Feature extraction:** Includes power, amplitude, variance, and
+    spectral measurements.
+-   **Two classifier families:** Saved Random Forest and MLP artifacts
+    are available for comparative prediction.
+-   **Capture analysis:** Includes work with existing PlutoSDR capture
+    files.
+-   **Synthetic-data experiments:** Includes training and stress-test
+    datasets.
+-   **Evaluation artifacts:** Existing CSVs and plots record selected
+    comparisons and metrics.
+-   **Interactive dashboard:** A Streamlit application provides a visual
+    interface for inspecting project outputs.
+-   **Provenance-aware interpretation:** The documentation distinguishes
+    saved experimental results from independently validated performance.
+
+------------------------------------------------------------------------
 
 ## System Architecture
 
-```text
-RF Signal / I-Q Capture
-          |
-          v
-   I/Q Sample Loading
-          |
-          v
-  Window Segmentation
-          |
-          v
-   Feature Extraction
-          |
-          v
-  Machine-Learning Model
-          |
-          v
-  Predicted Signal Class
-          |
-          v
-  Results and Evaluation
+The high-level workflow is:
+
+``` mermaid
+flowchart TD
+    A["I/Q capture or dataset"] --> B["Read and validate samples"]
+    B --> C["Split into fixed-size windows"]
+    C --> D["Extract time-domain and spectral features"]
+    D --> E["Prepare features in the model's expected order"]
+    E --> F["Saved Random Forest model"]
+    E --> G["Saved MLP model"]
+    F --> H["Predictions and confidence scores"]
+    G --> H
+    H --> I["Evaluation tables and visualizations"]
+    I --> J["Streamlit dashboard"]
+    I --> K["CSV result artifacts"]
 ```
 
-The four-class interactive dashboard and five-class synthetic baseline are separate workflows. They use separate model artifacts and should not be treated as one integrated five-class live classifier.
+The repository also contains `mermaid-diagram.png`, which can be viewed
+as a static diagram of the project. The diagram describes the intended
+workflow; the exact behavior of any script should be confirmed from that
+script and its current configuration.
 
-## Technologies Used
+### Pipeline stages
 
-- **Python** — implementation and data processing
-- **NumPy** — numerical operations and I/Q processing
-- **SciPy** — signal-processing operations
-- **pandas** — dataset and evaluation-table handling
-- **scikit-learn** — machine-learning models and evaluation metrics
-- **joblib** — model and feature-artifact storage
-- **matplotlib** — result visualization
-- **PlutoSDR** — radio-frequency signal capture
-- **libiio / pylibiio** — SDR device communication
-- **Tkinter** — interactive desktop dashboard interface
+1.  **Input:** Use an existing I/Q capture or a dataset prepared for an
+    experiment.
+2.  **Windowing:** Divide samples into fixed-size windows where the
+    selected workflow requires it.
+3.  **Feature extraction:** Calculate numerical descriptors for each
+    window.
+4.  **Feature preparation:** Match the names, definitions, ordering, and
+    preprocessing expected by the selected trained model.
+5.  **Inference:** Load the saved model artifact and produce a
+    prediction and, where supported, a score.
+6.  **Evaluation:** Compare predictions with labels only where suitable
+    ground truth is available.
+7.  **Reporting:** Save or inspect result tables and visualizations
+    through the available scripts and dashboard.
+
+------------------------------------------------------------------------
+
+## Signal Processing Pipeline
+
+RFRecon works with complex I/Q samples. A sample is represented by an
+in-phase component (I) and a quadrature component (Q), which together
+preserve amplitude and phase information.
+
+Several existing datasets use windows of **4,096 complex samples**.
+Window length, sample rate, center frequency, data format, and other
+acquisition metadata must be checked for each capture rather than
+assumed to be correct for every file.
+
+For a window (x\[n\]), the magnitude is (\|x\[n\]\|), and instantaneous
+power is commonly represented by (\|x\[n\]\|\^2). The project calculates
+summary and spectral features from windows and passes selected features
+to trained models.
+
+### Five configured categories
+
+  Label              Intended category
+  ------------------ ------------------------
+  `noise`            Noise-like samples
+  `wifi_like`        Wi-Fi-like samples
+  `bluetooth_like`   Bluetooth-like samples
+  `zigbee_like`      Zigbee-like samples
+  `cellular_like`    Cellular-like samples
+
+The suffix `like` is intentional: it describes the dataset's intended
+category, not independently verified protocol identity. The quality of
+the label depends on how the source signal was generated or captured and
+how its metadata was verified.
+
+------------------------------------------------------------------------
+
+## Feature Set
+
+The existing feature workflows include the following measurements:
+
+  -----------------------------------------------------------------------
+  Feature                             Description
+  ----------------------------------- -----------------------------------
+  `mean_power`                        Average squared magnitude of the
+                                      samples
+
+  `rms`                               Root mean square magnitude
+
+  `peak_amplitude`                    Largest sample magnitude in a
+                                      window
+
+  `variance`                          Variability of the relevant sample
+                                      or magnitude values, according to
+                                      the extractor
+
+  `peak_frequency_normalized`         Normalized location of the
+                                      strongest spectral component
+
+  `spectral_centroid_normalized`      Normalized spectral center of mass
+
+  `spectral_bandwidth_normalized`     Normalized spread of spectral
+                                      energy
+
+  `occupied_bandwidth_normalized`     Normalized bandwidth occupied under
+                                      the extractor's definition
+
+  `spectral_flatness`                 Measure of how noise-like or
+                                      tone-like a spectrum is
+
+  `peak_to_average_ratio`             Peak level relative to the average
+                                      level
+  -----------------------------------------------------------------------
+
+**Feature consistency is essential.** The exact mathematical
+definitions, FFT conventions, scaling, normalization, sample format, and
+feature ordering must match between training and inference. The current
+final-system script has been noted to use some definitions that differ
+from existing feature extractors. Until this discrepancy is resolved and
+validated, predictions and previously reported scores must be treated
+cautiously.
+
+------------------------------------------------------------------------
 
 ## Machine-Learning Models
 
-The repository contains Random Forest and Multi-Layer Perceptron (MLP) model artifacts, together with feature lists and evaluation utilities.
+### Random Forest
 
-### Four-class dashboard model
+A saved Random Forest model is used as a primary classifier in the
+final-system workflow. Random Forest combines predictions from multiple
+decision trees. Its output is still dependent on the training data and
+feature pipeline.
 
-The existing interactive dashboard uses a four-class Random Forest model:
+### Multi-Layer Perceptron (MLP)
 
-| Class | Label |
-|---|---|
-| 1 | `bluetooth_like` |
-| 2 | `cellular_like` |
-| 3 | `noise` |
-| 4 | `wifi_like` |
+A saved MLP model provides a second prediction for comparison. An MLP
+learns nonlinear relationships between input features and class labels.
 
-The dashboard loads its model and associated feature list from:
+### Comparing predictions
 
-- `rfrecon_four_class_best_rf.pkl`
-- `rfrecon_four_class_best_features.pkl`
+The project can compare the outputs of the two model families. Agreement
+can be useful for analysis, but it does **not** prove that a prediction
+is correct. A confidence or probability-like score should not be
+interpreted as a calibrated probability unless calibration has been
+evaluated.
 
-### Five-class synthetic baseline
+The scripts load saved model and feature artifacts. Keep each model
+paired with the correct feature list and preprocessing procedure.
 
-A separate five-class Random Forest baseline was trained using a synthetic dataset with 2,500 rows, comprising 500 rows per class.
+------------------------------------------------------------------------
 
-The classes are:
+## Streamlit Dashboard
 
-- `bluetooth_like`
-- `cellular_like`
-- `noise`
-- `wifi_like`
-- `zigbee_like`
+The repository includes `rfrecon_web_dashboard.py`, a Streamlit
+application intended to provide a visual interface to project data and
+evaluation outputs.
 
-Its saved artifacts are:
+### Start the dashboard
 
-- `rfrecon_five_class_synthetic_rf.pkl`
-- `rfrecon_five_class_synthetic_features.pkl`
+From the project root with the virtual environment activated, run:
 
-**The five-class synthetic model is an experimental baseline. It does not replace the four-class model used by the live dashboard.**
+``` cmd
+python -m streamlit run rfrecon_web_dashboard.py
+```
 
-## Dataset and Feature Extraction
+Streamlit prints a local URL in the terminal, typically:
 
-The project uses synthetic datasets and available I/Q captures.
+``` text
+http://localhost:8501
+```
 
-The feature-extraction pipeline includes measurements such as:
+Open the URL shown in your own terminal. The repository also includes
+`.streamlit/config.toml` for the dashboard's visual configuration.
 
-- Mean power
-- Root mean square (RMS)
-- Peak amplitude
-- Signal variance
-- Normalized peak frequency
-- Normalized spectral centroid
-- Normalized spectral bandwidth
-- Normalized occupied bandwidth
-- Spectral flatness
-- Peak-to-average ratio
+Dashboard views and available controls are determined by the current
+version of `rfrecon_web_dashboard.py` and the files present locally. The
+dashboard is an analysis interface; it does not independently validate
+capture labels or make model outputs ground truth.
 
-Feature definitions, sample rates, window sizes, and signal normalization affect model performance. The same feature-extraction implementation and compatible preprocessing must be used during training and inference.
+------------------------------------------------------------------------
 
-### Data sources
+## Dataset and Data Organization
 
-**Synthetic data:** Used for controlled training, baseline comparisons, and stress testing.
+The project contains synthetic training data, feature tables, saved
+evaluation outputs, and existing RF capture-related files. The exact
+contents vary by checkout and local data availability.
 
-**PlutoSDR captures:** Used to test the capture-analysis workflow and inspect predictions on acquired I/Q samples.
+A known training-data organization uses class-named folders:
 
-**External or candidate captures:** Available datasets may provide useful experimental examples, but their protocol labels and acquisition metadata must be verified before they can be used as confirmed ground truth.
+``` text
+robust_training_data/
+├── noise/
+├── wifi_like/
+├── bluetooth_like/
+├── zigbee_like/
+└── cellular_like/
+```
 
-## Evaluation Results
+The folders can contain NumPy `.npy` arrays. Inspect the actual files
+and metadata before assuming a particular sample format, sample rate,
+center frequency, or label provenance.
 
-### Five-class synthetic baseline
+### Existing data and metadata examples
 
-The five-class synthetic Random Forest baseline was evaluated on a stratified, held-out test split containing 500 synthetic rows.
+The repository's working data has included artifacts such as:
 
-| Metric | Result |
-|---|---:|
-| Test accuracy | 99.20% |
-| Test samples | 500 |
-| Classes | 5 |
+-   `hybrid_training_dataset.csv`
+-   `robust_training_dataset.csv`
+-   `stress_test_dataset.csv`
+-   `real_dataset/cellular_01_candidate_features.csv`
+-   `real_dataset/ieee802154_6lowpan_features.csv`
+-   `real_dataset/cellular_01_windows_metadata.csv`
+-   `baseline_model_comparison.csv`
+-   `capture_bandwidth_comparison.csv`
+-   `band_noise_wifi_separation.csv`
 
-The confusion matrix is shown below. Rows represent actual synthetic labels, and columns represent predicted labels.
+These names describe existing or previously inspected artifacts; not
+every file is guaranteed to exist in every clone. Refer to the actual
+repository tree for the current set.
 
-| Actual / Predicted | Bluetooth | Cellular | Noise | Wi-Fi | Zigbee |
-|---|---:|---:|---:|---:|---:|
-| Bluetooth | 100 | 0 | 0 | 0 | 0 |
-| Cellular | 0 | 100 | 0 | 0 | 0 |
-| Noise | 0 | 0 | 100 | 0 | 0 |
-| Wi-Fi | 0 | 0 | 0 | 100 | 0 |
-| Zigbee | 3 | 0 | 0 | 1 | 96 |
+### Real versus synthetic data
 
-The model correctly classified 496 out of 500 synthetic test rows.
+Keep a clear record of whether a sample is synthetic, captured from
+hardware, or derived from a capture. A feature row generated from a real
+capture is not the same thing as an independently verified real-world
+protocol example.
 
-![Five-Class Synthetic Evaluation Confusion Matrix](rfrecon_five_class_synthetic_confusion_matrix.png)
+For real captures, retain the original file and document, where known:
 
-*Note: This confusion matrix represents synthetic test data only and does not establish real-world RF classification accuracy.*
+-   Source capture filename and acquisition method.
+-   Sample format and whether samples are complex I/Q.
+-   Sample rate and center frequency.
+-   Window size and extraction settings.
+-   Intended class and how that label was verified.
+-   Any filtering, resampling, normalization, or other preprocessing.
 
-**Interpretation:** These results demonstrate performance on the particular synthetic dataset and split. They do not establish 99.20% accuracy on real-world RF signals. The synthetic data has limitations, including normalized signal power, and independent-capture validation remains necessary.
+Some existing capture metadata has inconsistencies or unverified
+settings. Do not silently replace unknown metadata with assumptions.
 
-### PlutoSDR dashboard checks
+------------------------------------------------------------------------
 
-The four-class dashboard was tested in the local Windows environment using existing and freshly captured I/Q data.
+## Evaluation Results Already Present
 
-The tested workflow successfully processed captures containing 262,144 complex I/Q samples, corresponding to 64 windows at the configured window size.
+The current project documentation records these results from existing
+artifacts:
 
-The dashboard displayed predicted classes and model scores for the tested captures. These results confirm that the capture-analysis workflow runs in the tested environment; they do not independently verify the true protocol labels or establish real-world classification accuracy.
+  Experiment                        Random Forest      MLP
+  ------------------------------- --------------- --------
+  Hybrid validation                        99.38%   98.96%
+  Unseen real Wi-Fi experiment               100%     100%
+  PlutoSDR capture 02                      99.95%   99.82%
+  PlutoSDR capture 03                        100%     100%
+  Synthetic low-SNR stress test            97.84%   79.08%
 
-### Input validation checks
+A separate four-class temporal evaluation reported **69.33% accuracy**
+and a **69.06% macro F1-score**. It used windows from existing captures
+rather than an independent capture for each class.
 
-The dashboard was also tested for invalid input conditions:
+**These are previously reported project results, not independently
+revalidated measurements.** Their datasets, labels, feature pipelines,
+and evaluation protocols are not necessarily equivalent. In particular,
+high agreement or high confidence on a capture does not establish
+correctness without independently verified ground truth.
 
-- Missing capture selection produces a warning.
-- A non-positive sample rate, such as `0 MS/s`, produces a validation error.
-- Capture analysis checks for empty or invalid I/Q data and insufficient samples for a complete window.
+Do not present the table as a single directly comparable benchmark. For
+a formal report, include the relevant dataset, split method, number of
+independent captures, class-wise metrics, confusion matrix, and exact
+feature pipeline for each experiment.
 
-## Dataset and Validation Limitations
+------------------------------------------------------------------------
 
-- Synthetic training signals are normalized to approximately unit average power, limiting the usefulness of raw power and RMS features for distinguishing synthetic classes.
-- Synthetic and real-data feature extraction must be checked for consistency.
-- Some available real captures contain multiple windows from a single source capture. Windows from the same capture are not independent recordings.
-- Zigbee-like and cellular-like candidate labels have not been independently verified.
-- The available IEEE 802.15.4 / 6LoWPAN capture is not confirmed ground truth for Zigbee.
-- Sample-rate and center-frequency verification flags are not confirmed for all available captures.
-- A predicted class does not prove that a particular protocol is present.
-- Model confidence and agreement between classifiers are not substitutes for independent ground-truth evaluation.
-- Synthetic-data performance must be reported separately from real-capture performance.
+## Validation Limitations
 
-## Important Project Files
+The following limitations have been identified in the project:
 
-| File | Purpose |
-|---|---|
-| `rfrecon_live_dashboard.py` | Four-class interactive dashboard |
-| `rfrecon_consistent_features.py` | Consistent feature extraction used by the dashboard |
-| `rfrecon_four_class_best_rf.pkl` | Four-class Random Forest model |
-| `rfrecon_four_class_best_features.pkl` | Feature list for the four-class model |
-| `rfrecon_five_class_synthetic_rf.pkl` | Five-class synthetic Random Forest baseline |
-| `rfrecon_five_class_synthetic_features.pkl` | Feature list for the five-class baseline |
-| `rfrecon_five_class_synthetic_report.csv` | Five-class synthetic evaluation report |
-| `rfrecon_five_class_synthetic_confusion_matrix.csv` | Five-class synthetic confusion matrix |
-| `robust_training_dataset_consistent_5class.csv` | Five-class synthetic training dataset |
-| `train_five_class_consistent.py` | Script used to train the five-class baseline |
-| `build_consistent_synthetic_dataset.py` | Synthetic dataset-generation utility |
-| `rfrecon_final_system.py` | Existing batch-prediction script |
-| `rfrecon_hybrid_model.pkl` | Existing hybrid Random Forest model artifact |
-| `rfrecon_hybrid_features.pkl` | Feature list for the hybrid model |
-| `rfrecon_mlp_model.pkl` | Existing MLP model artifact |
-| `rfrecon_mlp_features.pkl` | Feature list for the MLP model |
-| `hybrid_training_dataset.csv` | Existing hybrid dataset |
-| `robust_training_dataset.csv` | Existing synthetic training dataset |
-| `stress_test_dataset.csv` | Existing synthetic stress-test dataset |
-| `four_class_baseline_oct17_results.csv` | Existing four-class evaluation results |
-| `rfrecon_final_summary.csv` | Previously saved final-capture summary |
-| `RFRecon_final_results_table.csv` | Existing experiment comparison table |
+-   Synthetic training signals have been normalized to approximately
+    unit average power, limiting the usefulness of raw power and RMS
+    features for separating synthetic classes.
+-   Synthetic and real-data feature extraction methods are not fully
+    consistent.
+-   Some classes have only one source capture available, limiting
+    independent-capture evaluation.
+-   The real Zigbee-like and cellular-like labels have not been
+    independently verified.
+-   Windows from the same capture can be highly correlated. Randomly
+    splitting windows from one capture across training and test sets can
+    cause leakage and overstate generalization.
+-   A prediction labelled `wifi_like`, `bluetooth_like`, `zigbee_like`,
+    or `cellular_like` does not prove that the corresponding protocol is
+    present.
+-   Agreement between Random Forest and MLP is not a substitute for
+    ground-truth validation.
+-   A score from one experiment should not be compared directly with a
+    score from a different dataset or evaluation protocol without
+    explaining the differences.
 
-The repository contains artifacts from different experimental stages. Check each script's model and feature paths before running it; do not assume every script uses the same model.
+A stronger evaluation should use independently captured and
+independently labelled signals, capture-aware train/test splits, a
+consistent extractor, class-wise precision and recall, macro F1, and a
+confusion matrix.
 
-## Software Requirements
+------------------------------------------------------------------------
 
-The tested local environment uses:
+## Project Structure and Important Files
 
-- Python 3.13.13
-- A virtual environment named `.venv`
-- NumPy
-- SciPy
-- pandas
-- scikit-learn
-- joblib
-- matplotlib
-- Pillow
-- pylibiio and the locally configured `libiio.dll` for SDR-related functionality
+The exact repository contents can change as the project evolves.
+Important files and artifacts identified in the project include:
 
-A clean installation on another computer has not been independently verified. Package versions and native-library locations may differ.
+  -----------------------------------------------------------------------------
+  File or directory                         Purpose
+  ----------------------------------------- -----------------------------------
+  `rfrecon_web_dashboard.py`                Streamlit dashboard
 
-## Running the Four-Class Dashboard on Windows
+  `.streamlit/config.toml`                  Streamlit appearance and server
+                                            configuration
+
+  `rfrecon_final_system.py`                 Batch prediction and final-system
+                                            workflow
+
+  `rfrecon_hybrid_model.pkl`                Saved Random Forest model artifact
+
+  `rfrecon_hybrid_features.pkl`             Feature list associated with the
+                                            hybrid/Random Forest workflow
+
+  `rfrecon_mlp_model.pkl`                   Saved MLP model artifact
+
+  `rfrecon_mlp_features.pkl`                Feature list associated with the
+                                            MLP workflow
+
+  `hybrid_training_dataset.csv`             Existing hybrid dataset
+
+  `robust_training_dataset.csv`             Existing synthetic training dataset
+
+  `stress_test_dataset.csv`                 Existing synthetic stress-test
+                                            dataset
+
+  `real_dataset/`                           Real-capture-related files, derived
+                                            features, and metadata
+
+  `robust_training_data/`                   Class-organized NumPy training
+                                            samples, where present
+
+  `four_class_baseline_oct17_results.csv`   Saved four-class evaluation metrics
+
+  `rfrecon_final_summary.csv`               Previously saved final-capture
+                                            summary
+
+  `RFRecon_final_results_table.csv`         Existing experiment comparison
+                                            table
+
+  `mermaid-diagram.png`                     Static project diagram
+
+  `RFRecon_architecture.mmd`                Mermaid architecture source, where
+                                            present
+
+  `RFRecon_demo_script.md`                  Demo/presentation notes, where
+                                            present
+
+  `requirements.txt`                        Python dependencies
+  -----------------------------------------------------------------------------
+
+Not all listed files are guaranteed to be present in every checkout.
+Model files and large capture datasets may need to be supplied
+separately if they are not tracked by Git.
+
+------------------------------------------------------------------------
+
+## Technology Stack
+
+  -----------------------------------------------------------------------
+  Technology                          Role
+  ----------------------------------- -----------------------------------
+  Python                              Main implementation language
+
+  NumPy                               Complex arrays and numerical
+                                      operations
+
+  pandas                              Tabular data and CSV processing
+
+  scikit-learn                        Machine-learning models and
+                                      evaluation utilities
+
+  joblib / pickle artifacts           Loading saved model and feature
+                                      artifacts
+
+  SciPy                               Signal-processing functionality
+                                      used by feature-extraction scripts
+
+  Streamlit                           Local interactive dashboard
+
+  Plotly                              Interactive charts used by the
+                                      dashboard, where configured
+
+  PlutoSDR                            Source of existing SDR captures
+                                      used in project experiments
+
+  Git and GitHub                      Version control and project sharing
+  -----------------------------------------------------------------------
+
+The actual requirements and supported versions are defined by
+`requirements.txt` and the working Python environment.
+
+------------------------------------------------------------------------
+
+## Installation on Windows
+
+Run commands from the project root directory.
 
 ### 1. Open the project directory
 
-Open Command Prompt in the `RFRecon_AI` project root, where `rfrecon_live_dashboard.py` is located.
-
-### 2. Activate the virtual environment
-
-```cmd
-.venv\Scripts\activate
+``` cmd
+cd "C:\Users\admin\Desktop\Notes of all subjects\BTECH CPSS\Projects\SEM-3\RFRecon_AI"
 ```
 
-### 3. Launch the dashboard
+Use your actual project path if it differs.
 
-On the tested Windows setup, the PlutoSDR library is located at:
+### 2. Create and activate the virtual environment
 
-`C:\Program Files\Analog Devices\Scopy\libiio.dll`
+If `.venv` already exists, do not recreate it unnecessarily. Activate it
+in Command Prompt:
 
-Run the following command from the project root. It applies a local DLL lookup workaround to the Python process that launches the dashboard.
-
-```cmd
-python -c "import os,ctypes.util,runpy,sys; p=r'C:\Program Files\Analog Devices\Scopy'; os.add_dll_directory(p); ctypes.util.find_library=lambda name: os.path.join(p,'libiio.dll') if name in ('libiio.dll','iio') else None; sys.argv=['rfrecon_live_dashboard.py']; runpy.run_path('rfrecon_live_dashboard.py',run_name='__main__')"
+``` cmd
+.venv\Scripts\activate.bat
 ```
 
-This command was tested on the local Windows environment using Python 3.13.13 and the existing Scopy installation. The DLL directory, model files, and project files must exist at the configured paths. Other Windows setups may require a different DLL path.
+If you have not created a virtual environment yet:
 
-### 4. Use the dashboard
+``` cmd
+python -m venv .venv
+.venv\Scripts\activate.bat
+```
 
-- **Select IQ capture:** Choose an existing compatible complex64 I/Q capture file.
-- **Analyze capture:** Extracts features and displays predictions using the four-class model.
-- **Capture from Pluto:** Captures new I/Q data from a connected and configured PlutoSDR, then analyzes it.
+### 3. Install dependencies
 
-Use the sample rate that matches the actual acquisition settings for the capture. Do not assume that a configured frequency or sample rate has been independently verified simply because the dashboard runs.
+``` cmd
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
 
-**Safety note:** Keep the four-class live dashboard model separate from the five-class synthetic baseline. Back up existing prediction files before running any separate script that may overwrite results.
+If installation fails, check the error and the Python version expected
+by the dependencies before changing package versions. Keep the
+dependency list consistent with the tested environment.
 
-## Current Status
+### 4. Confirm the dashboard dependency
 
-### Implemented and tested
+``` cmd
+python -m streamlit --version
+```
 
-- Random Forest and MLP model artifacts.
-- Synthetic datasets and stress-testing utilities.
-- Feature-extraction and evaluation scripts.
-- Four-class dashboard launch in the tested Windows environment.
-- Existing-capture analysis and fresh PlutoSDR capture analysis.
-- Five-class synthetic baseline training and held-out evaluation.
-- Five-class report and confusion-matrix exports.
-- Input-validation checks for missing capture selection and invalid sample rate.
+If the command reports that Streamlit is missing, install the
+dependencies from `requirements.txt` in the activated environment and
+check the output.
+
+### 5. Protect local configuration and data
+
+Do not commit API keys, passwords, private credentials, or other
+secrets. Review large capture files and any dataset licensing or privacy
+requirements before publishing them. Preserve original captures and
+existing evaluation artifacts before running scripts that may rewrite
+results.
+
+------------------------------------------------------------------------
+
+## Run the Dashboard
+
+With `.venv` activated and the current directory set to the project
+root:
+
+``` cmd
+python -m streamlit run rfrecon_web_dashboard.py
+```
+
+Open the local address printed by Streamlit. Stop the server with
+`Ctrl+C` in the terminal.
+
+If the dashboard reports missing files, verify that the required model
+artifacts, feature lists, and result files exist at the paths expected
+by the application. Do not rename or replace model artifacts without
+checking the code that loads them.
+
+## Run the Batch Prediction Script
+
+The repository includes `rfrecon_final_system.py` for the final-system
+prediction workflow. Run it only after checking its configured input
+paths and expected model artifacts:
+
+``` cmd
+python rfrecon_final_system.py
+```
+
+The script may process files or generate outputs based on its current
+configuration. Inspect the script first if you need to know exactly
+which files it reads or writes. Back up important results before
+executing a workflow that may overwrite them.
+
+------------------------------------------------------------------------
+
+## Reproducibility and Safe Evaluation
+
+For defensible evaluation:
+
+1.  **Freeze the feature pipeline.** Use identical feature definitions,
+    scaling, ordering, and preprocessing during training and inference.
+2.  **Split by capture, not only by window.** Where possible, keep
+    windows from one capture entirely within one split to reduce data
+    leakage.
+3.  **Preserve ground truth.** Document how the source signal and class
+    label were verified.
+4.  **Report per-class results.** Include precision, recall, F1-score,
+    support, and a confusion matrix.
+5.  **Compare appropriate baselines.** Use the same test captures and
+    evaluation protocol for each model.
+6.  **Keep experiments reproducible.** Record model version, feature
+    extractor version, dataset manifest, random seed where relevant, and
+    evaluation settings.
+7.  **Preserve existing results.** Before running scripts that write
+    CSVs, plots, models, or summaries, check the output paths and make a
+    separate backup if the current results must be retained.
+8.  **Separate evidence from assumptions.** Mark synthetic data,
+    unverified labels, estimated metadata, and derived features
+    explicitly.
+
+------------------------------------------------------------------------
+
+## Current Status and Next Steps
+
+### Implemented or present in the project
+
+-   Saved Random Forest and MLP model artifacts.
+-   Synthetic training and stress-test datasets.
+-   I/Q feature-extraction and capture-analysis workflows.
+-   Existing PlutoSDR capture-related artifacts.
+-   Saved evaluation CSVs and comparison results.
+-   Streamlit dashboard and dashboard configuration.
+-   Project architecture and demo documentation.
 
 ### Remaining validation work
 
-1. Verify feature definitions and preprocessing across all training and inference scripts.
-2. Confirm acquisition metadata against capture logs and actual hardware settings.
-3. Independently verify cellular-like and Zigbee-related ground-truth labels.
-4. Collect or identify independently labelled real captures for each target class.
-5. Evaluate using capture-aware train/test splits to reduce leakage between windows from the same capture.
-6. Report real-capture metrics separately from synthetic-data results.
-7. Confirm the final README instructions and required files on the submission environment.
+1.  Align feature definitions between training and inference.
+2.  Validate the corrected feature pipeline without overwriting existing
+    artifacts.
+3.  Evaluate on independently captured and independently labelled
+    signals.
+4.  Verify the ground truth for real Zigbee-like and cellular-like
+    captures.
+5.  Use capture-aware splits to reduce window leakage.
+6.  Recalculate and document final metrics using a defined evaluation
+    protocol.
+7.  Record exact data provenance and acquisition metadata for each real
+    capture.
+
+------------------------------------------------------------------------
+
+## Limitations
+
+-   RFRecon is an experimental research project, not a certified RF
+    identification system.
+-   The classifiers can make incorrect predictions on unseen signals or
+    under changed capture conditions.
+-   Labels containing `like` indicate intended categories, not verified
+    protocol identity.
+-   Some real-capture metadata and labels remain unverified.
+-   Inconsistent feature extraction can invalidate comparisons between
+    training and inference.
+-   Results from correlated windows may overestimate performance if
+    capture leakage is present.
+-   Model confidence and agreement do not establish correctness.
+-   Existing high scores have not all been independently revalidated.
+-   Performance should not be generalized beyond the datasets and
+    conditions actually tested.
+-   The dashboard visualizes available project artifacts; it does not
+    itself establish ground truth.
+
+------------------------------------------------------------------------
 
 ## Conclusion
 
-RFRecon_AI is an experimental SDR classification pipeline that combines I/Q signal processing, feature extraction, machine-learning models, PlutoSDR capture analysis, and evaluation utilities.
+RFRecon AI provides an experimental SDR workflow for extracting features
+from complex I/Q samples, comparing Random Forest and MLP predictions,
+examining existing capture data, and visualizing saved results through a
+Streamlit dashboard. Its reported results are useful for guiding further
+experiments, but reliable real-world protocol classification requires
+consistent feature extraction, independent captures, verified labels,
+and a leakage-resistant evaluation design.
 
-The current implementation demonstrates a working four-class capture-analysis dashboard and a separate five-class synthetic baseline. Further validation with consistent preprocessing, verified capture metadata, independently labelled real signals, and capture-aware evaluation is required before making claims about reliable real-world protocol identification.
+**Project principle:** Treat predictions as hypotheses, preserve the
+provenance of every capture, and make performance claims only when the
+evaluation protocol supports them.
