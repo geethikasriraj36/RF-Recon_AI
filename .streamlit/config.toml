@@ -1,0 +1,12 @@
+[server]
+# 4 GiB browser upload cap; local-path analysis is preferred for very large captures.
+maxUploadSize = 4096
+maxMessageSize = 4096
+
+[theme]
+base = "dark"
+primaryColor = "#55d6d0"
+backgroundColor = "#080e18"
+secondaryBackgroundColor = "#101b2d"
+textColor = "#eaf1ff"
+font = "sans serif"
