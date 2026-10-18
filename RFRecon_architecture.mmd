@@ -1,0 +1,24 @@
+
+flowchart TD
+    A["ADALM-PLUTO SDR / Saved IQ Capture"] --> B["IQ Capture Input"]
+    B --> C["Sample-Rate Validation"]
+    C --> D["IQ Windowing"]
+    D --> E["Consistent Feature Extraction"]
+    E --> F["10 RF Features"]
+    F --> G["Four-Class Random Forest"]
+    G --> H["Bluetooth-like"]
+    G --> I["Cellular-like"]
+    G --> J["Noise"]
+    G --> K["Wi-Fi-like"]
+    H --> L["Prediction Summary"]
+    I --> L
+    J --> L
+    K --> L
+    L --> M["Spectrum and Probability Charts"]
+
+    N["Separate Synthetic Dataset"] --> O["Five-Class Training and Evaluation"]
+    O --> P["Synthetic Confusion Matrix and Metrics"]
+    P --> Q["Zigbee-like Class: Synthetic Only"]
+
+    R["Real-data provenance audit"] -. "Not yet verified" .-> S["Cellular acquisition settings"]
+    R -. "No usable IQ in inspected archive" .-> T["Zigbee reference"]
