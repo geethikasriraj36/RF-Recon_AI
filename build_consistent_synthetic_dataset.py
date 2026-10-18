@@ -9,7 +9,7 @@ from rfrecon_consistent_features import (
 )
 
 SOURCE_DIR = Path("robust_training_data")
-OUTPUT_FILE = Path("robust_training_dataset_consistent.csv")
+OUTPUT_FILE = Path("robust_training_dataset_consistent_5class.csv")
 SAMPLE_RATE = 2_000_000
 
 if not SOURCE_DIR.exists():
