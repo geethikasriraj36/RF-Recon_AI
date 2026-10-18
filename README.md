@@ -1,37 +1,119 @@
-# RFRecon - AI-Based RF Signal Classification
+# RFRecon_AI — AI-Based RF Signal Classification
 
 ## Overview
 
-RFRecon is a software-defined radio (SDR) project that analyzes complex in-phase and quadrature (I/Q) samples and extracts signal features for radio-frequency classification.
+RFRecon_AI is a Software-Defined Radio (SDR) project that analyzes complex in-phase and quadrature (I/Q) samples and extracts signal features for radio-frequency classification.
 
-The project includes Random Forest and Multi-Layer Perceptron (MLP) classifiers, synthetic RF datasets, PlutoSDR capture analysis, stress testing, and evaluation utilities.
+The project combines machine-learning models, synthetic RF datasets, PlutoSDR capture analysis, feature extraction, stress testing, and evaluation utilities.
 
-**Important:** Classification outputs are model predictions. Their reliability depends on feature-pipeline consistency, independently verified signal labels, and evaluation methodology.
+The system explores classification of signals belonging to the following categories:
+
+- Bluetooth-like
+- Cellular-like
+- Noise
+- Wi-Fi-like
+- Zigbee-like
+
+**Important:** Classification results are model predictions, not proof that a particular radio protocol is present. Reliable real-world identification requires independently verified signal labels and a consistent feature-extraction pipeline.
 
 ## Objectives
 
 - Analyze captured I/Q samples using fixed-size windows.
-- Extract time-domain and frequency-domain features.
-- Compare Random Forest and MLP predictions.
-- Evaluate model behavior on synthetic and real SDR captures.
-- Investigate classification errors, feature differences, and robustness under stress conditions.
+- Extract time-domain and frequency-domain signal features.
+- Train and evaluate machine-learning classifiers.
+- Analyze existing SDR captures and newly acquired PlutoSDR samples.
+- Compare synthetic-data performance with real-capture observations.
+- Evaluate classification performance using accuracy, precision, recall, F1-score, and confusion matrices.
+- Identify limitations in dataset quality, capture metadata, and generalization.
 
 ## System Architecture
 
-1. **Signal acquisition:** RF samples are obtained from existing PlutoSDR capture files or, when configured, from the SDR hardware.
-2. **Windowing:** Samples are divided into windows, commonly 4,096 complex samples.
-3. **Feature extraction:** Time-domain and spectral features are calculated.
-4. **Classification:** Saved Random Forest and MLP models produce predictions and confidence scores.
-5. **Evaluation:** CSV files and plots summarize predictions, confusion matrices, and model comparisons.
+```text
+RF Signal / I-Q Capture
+          |
+          v
+   I/Q Sample Loading
+          |
+          v
+  Window Segmentation
+          |
+          v
+   Feature Extraction
+          |
+          v
+  Machine-Learning Model
+          |
+          v
+  Predicted Signal Class
+          |
+          v
+  Results and Evaluation
+```
 
-## Features
+The four-class interactive dashboard and five-class synthetic baseline are separate workflows. They use separate model artifacts and should not be treated as one integrated five-class live classifier.
 
-The feature set includes:
+## Technologies Used
+
+- **Python** — implementation and data processing
+- **NumPy** — numerical operations and I/Q processing
+- **SciPy** — signal-processing operations
+- **pandas** — dataset and evaluation-table handling
+- **scikit-learn** — machine-learning models and evaluation metrics
+- **joblib** — model and feature-artifact storage
+- **matplotlib** — result visualization
+- **PlutoSDR** — radio-frequency signal capture
+- **libiio / pylibiio** — SDR device communication
+- **Tkinter** — interactive desktop dashboard interface
+
+## Machine-Learning Models
+
+The repository contains Random Forest and Multi-Layer Perceptron (MLP) model artifacts, together with feature lists and evaluation utilities.
+
+### Four-class dashboard model
+
+The existing interactive dashboard uses a four-class Random Forest model:
+
+| Class | Label |
+|---|---|
+| 1 | `bluetooth_like` |
+| 2 | `cellular_like` |
+| 3 | `noise` |
+| 4 | `wifi_like` |
+
+The dashboard loads its model and associated feature list from:
+
+- `rfrecon_four_class_best_rf.pkl`
+- `rfrecon_four_class_best_features.pkl`
+
+### Five-class synthetic baseline
+
+A separate five-class Random Forest baseline was trained using a synthetic dataset with 2,500 rows, comprising 500 rows per class.
+
+The classes are:
+
+- `bluetooth_like`
+- `cellular_like`
+- `noise`
+- `wifi_like`
+- `zigbee_like`
+
+Its saved artifacts are:
+
+- `rfrecon_five_class_synthetic_rf.pkl`
+- `rfrecon_five_class_synthetic_features.pkl`
+
+**The five-class synthetic model is an experimental baseline. It does not replace the four-class model used by the live dashboard.**
+
+## Dataset and Feature Extraction
+
+The project uses synthetic datasets and available I/Q captures.
+
+The feature-extraction pipeline includes measurements such as:
 
 - Mean power
 - Root mean square (RMS)
 - Peak amplitude
-- Variance
+- Signal variance
 - Normalized peak frequency
 - Normalized spectral centroid
 - Normalized spectral bandwidth
@@ -39,77 +121,105 @@ The feature set includes:
 - Spectral flatness
 - Peak-to-average ratio
 
-Feature definitions must remain consistent between model training and inference. The current final-system script uses some definitions that differ from existing feature extractors; its results require validation before being treated as reliable performance measurements.
+Feature definitions, sample rates, window sizes, and signal normalization affect model performance. The same feature-extraction implementation and compatible preprocessing must be used during training and inference.
 
-## Machine Learning Models
+### Data sources
 
-### Random Forest
+**Synthetic data:** Used for controlled training, baseline comparisons, and stress testing.
 
-The Random Forest model is used as the primary classifier in the final-system script.
+**PlutoSDR captures:** Used to test the capture-analysis workflow and inspect predictions on acquired I/Q samples.
 
-### Multi-Layer Perceptron
+**External or candidate captures:** Available datasets may provide useful experimental examples, but their protocol labels and acquisition metadata must be verified before they can be used as confirmed ground truth.
 
-The MLP model provides a comparative classification result.
+## Evaluation Results
 
-Both models load saved model and feature artifacts. Agreement between them indicates prediction consistency, not necessarily correctness.
+### Five-class synthetic baseline
 
-## Existing Evaluation Results
+The five-class synthetic Random Forest baseline was evaluated on a stratified, held-out test split containing 500 synthetic rows.
 
-The following table summarizes previously saved project results.
+| Metric | Result |
+|---|---:|
+| Test accuracy | 99.20% |
+| Test samples | 500 |
+| Classes | 5 |
 
-| Experiment | Random Forest | MLP |
-|---|---:|---:|
-| Hybrid validation | 99.38% | 98.96% |
-| Unseen real Wi-Fi experiment | 100% | 100% |
-| PlutoSDR capture 02 | 99.95% | 99.82% |
-| PlutoSDR capture 03 | 100% | 100% |
-| Synthetic low-SNR stress test | 97.84% | 79.08% |
+The confusion matrix is shown below. Rows represent actual synthetic labels, and columns represent predicted labels.
 
-**These are reported results from existing project artifacts, not independently revalidated measurements.** The evaluation methods and ground-truth labels differ or remain unverified across experiments.
+| Actual / Predicted | Bluetooth | Cellular | Noise | Wi-Fi | Zigbee |
+|---|---:|---:|---:|---:|---:|
+| Bluetooth | 100 | 0 | 0 | 0 | 0 |
+| Cellular | 0 | 100 | 0 | 0 | 0 |
+| Noise | 0 | 0 | 100 | 0 | 0 |
+| Wi-Fi | 0 | 0 | 0 | 100 | 0 |
+| Zigbee | 3 | 0 | 0 | 1 | 96 |
 
-A separate four-class temporal evaluation reported 69.33% accuracy and a macro F1-score of 69.06%. It used windows from existing captures rather than an independent capture for each class.
+The model correctly classified 496 out of 500 synthetic test rows.
 
-The high prediction agreement reported for PlutoSDR captures must not be interpreted as verified classification accuracy without independent ground truth.
+**Interpretation:** These results demonstrate performance on the particular synthetic dataset and split. They do not establish 99.20% accuracy on real-world RF signals. The synthetic data has limitations, including normalized signal power, and independent-capture validation remains necessary.
+
+### PlutoSDR dashboard checks
+
+The four-class dashboard was tested in the local Windows environment using existing and freshly captured I/Q data.
+
+The tested workflow successfully processed captures containing 262,144 complex I/Q samples, corresponding to 64 windows at the configured window size.
+
+The dashboard displayed predicted classes and model scores for the tested captures. These results confirm that the capture-analysis workflow runs in the tested environment; they do not independently verify the true protocol labels or establish real-world classification accuracy.
+
+### Input validation checks
+
+The dashboard was also tested for invalid input conditions:
+
+- Missing capture selection produces a warning.
+- A non-positive sample rate, such as `0 MS/s`, produces a validation error.
+- Capture analysis checks for empty or invalid I/Q data and insufficient samples for a complete window.
 
 ## Dataset and Validation Limitations
 
 - Synthetic training signals are normalized to approximately unit average power, limiting the usefulness of raw power and RMS features for distinguishing synthetic classes.
-- Synthetic and real-data feature extraction methods are not fully consistent.
-- Some real captures have only one source capture per class, limiting independent-capture evaluation.
-- Zigbee-like and cellular-like real-capture labels have not been independently verified.
-- A signal classified as a particular protocol is not proof that the protocol is present.
-- Confidence scores and agreement between classifiers are not substitutes for ground-truth evaluation.
-- Capture sample rates and center frequencies should be checked against acquisition logs before being presented as confirmed hardware settings.
-- Synthetic stress-test performance must be distinguished from performance on independently captured and labelled real signals.
+- Synthetic and real-data feature extraction must be checked for consistency.
+- Some available real captures contain multiple windows from a single source capture. Windows from the same capture are not independent recordings.
+- Zigbee-like and cellular-like candidate labels have not been independently verified.
+- The available IEEE 802.15.4 / 6LoWPAN capture is not confirmed ground truth for Zigbee.
+- Sample-rate and center-frequency verification flags are not confirmed for all available captures.
+- A predicted class does not prove that a particular protocol is present.
+- Model confidence and agreement between classifiers are not substitutes for independent ground-truth evaluation.
+- Synthetic-data performance must be reported separately from real-capture performance.
 
 ## Important Project Files
 
 | File | Purpose |
 |---|---|
 | `rfrecon_live_dashboard.py` | Four-class interactive dashboard |
-| `rfrecon_consistent_features.py` | Feature extractor used by the dashboard |
+| `rfrecon_consistent_features.py` | Consistent feature extraction used by the dashboard |
 | `rfrecon_four_class_best_rf.pkl` | Four-class Random Forest model |
-| `rfrecon_four_class_best_features.pkl` | Feature list associated with the four-class model |
-| `rfrecon_final_system.py` | Final batch-prediction script |
-| `rfrecon_hybrid_model.pkl` | Saved Random Forest model artifact |
-| `rfrecon_hybrid_features.pkl` | Random Forest feature list |
-| `rfrecon_mlp_model.pkl` | Saved MLP model artifact |
-| `rfrecon_mlp_features.pkl` | MLP feature list |
+| `rfrecon_four_class_best_features.pkl` | Feature list for the four-class model |
+| `rfrecon_five_class_synthetic_rf.pkl` | Five-class synthetic Random Forest baseline |
+| `rfrecon_five_class_synthetic_features.pkl` | Feature list for the five-class baseline |
+| `rfrecon_five_class_synthetic_report.csv` | Five-class synthetic evaluation report |
+| `rfrecon_five_class_synthetic_confusion_matrix.csv` | Five-class synthetic confusion matrix |
+| `robust_training_dataset_consistent_5class.csv` | Five-class synthetic training dataset |
+| `train_five_class_consistent.py` | Script used to train the five-class baseline |
+| `build_consistent_synthetic_dataset.py` | Synthetic dataset-generation utility |
+| `rfrecon_final_system.py` | Existing batch-prediction script |
+| `rfrecon_hybrid_model.pkl` | Existing hybrid Random Forest model artifact |
+| `rfrecon_hybrid_features.pkl` | Feature list for the hybrid model |
+| `rfrecon_mlp_model.pkl` | Existing MLP model artifact |
+| `rfrecon_mlp_features.pkl` | Feature list for the MLP model |
 | `hybrid_training_dataset.csv` | Existing hybrid dataset |
 | `robust_training_dataset.csv` | Existing synthetic training dataset |
 | `stress_test_dataset.csv` | Existing synthetic stress-test dataset |
-| `four_class_baseline_oct17_results.csv` | Saved four-class evaluation metrics |
+| `four_class_baseline_oct17_results.csv` | Existing four-class evaluation results |
 | `rfrecon_final_summary.csv` | Previously saved final-capture summary |
 | `RFRecon_final_results_table.csv` | Existing experiment comparison table |
 
-The files listed above serve different stages of the project. Verify that a particular script's model and feature paths match the intended artifacts before running it.
+The repository contains artifacts from different experimental stages. Check each script's model and feature paths before running it; do not assume every script uses the same model.
 
 ## Software Requirements
 
 The tested local environment uses:
 
 - Python 3.13.13
-- A Python virtual environment named `.venv`
+- A virtual environment named `.venv`
 - NumPy
 - SciPy
 - pandas
@@ -117,15 +227,15 @@ The tested local environment uses:
 - joblib
 - matplotlib
 - Pillow
-- pylibiio and the locally configured libiio DLL for SDR-related functionality
+- pylibiio and the locally configured `libiio.dll` for SDR-related functionality
 
-Exact dependency compatibility may vary. A clean installation on another computer has not been verified.
+A clean installation on another computer has not been independently verified. Package versions and native-library locations may differ.
 
 ## Running the Four-Class Dashboard on Windows
 
 ### 1. Open the project directory
 
-Open Command Prompt in the RFRecon_AI project root, where `rfrecon_live_dashboard.py` is located.
+Open Command Prompt in the `RFRecon_AI` project root, where `rfrecon_live_dashboard.py` is located.
 
 ### 2. Activate the virtual environment
 
@@ -137,41 +247,51 @@ Open Command Prompt in the RFRecon_AI project root, where `rfrecon_live_dashboar
 
 On the tested Windows setup, the PlutoSDR library is located at:
 
-`D:\RFRecon\Windows\Windows-VS-2022-x64\libiio.dll`
+`C:\Program Files\Analog Devices\Scopy\libiio.dll`
 
-The following command applies the local DLL lookup workaround to the Python process that launches the dashboard:
+Run the following command from the project root. It applies a local DLL lookup workaround to the Python process that launches the dashboard.
 
 ```cmd
-python -c "import os,ctypes.util,runpy,sys; p=r'D:\RFRecon\Windows\Windows-VS-2022-x64'; os.add_dll_directory(p); old=ctypes.util.find_library; ctypes.util.find_library=lambda name: p+r'\libiio.dll' if name=='libiio.dll' else old(name); sys.argv=['rfrecon_live_dashboard.py']; runpy.run_path('rfrecon_live_dashboard.py',run_name='__main__')"
+python -c "import os,ctypes.util,runpy,sys; p=r'C:\Program Files\Analog Devices\Scopy'; os.add_dll_directory(p); ctypes.util.find_library=lambda name: os.path.join(p,'libiio.dll') if name in ('libiio.dll','iio') else None; sys.argv=['rfrecon_live_dashboard.py']; runpy.run_path('rfrecon_live_dashboard.py',run_name='__main__')"
 ```
 
-This command is specific to the tested Windows environment. The DLL directory and model files must exist at the configured paths. The dashboard may access the PlutoSDR when capture controls are used.
+This command was tested on the local Windows environment using Python 3.13.13 and the existing Scopy installation. The DLL directory, model files, and project files must exist at the configured paths. Other Windows setups may require a different DLL path.
 
-**Safety note:** Opening the dashboard does not validate classification accuracy. Back up existing prediction files before running any separate script that exports or overwrites results.
+### 4. Use the dashboard
+
+- **Select IQ capture:** Choose an existing compatible complex64 I/Q capture file.
+- **Analyze capture:** Extracts features and displays predictions using the four-class model.
+- **Capture from Pluto:** Captures new I/Q data from a connected and configured PlutoSDR, then analyzes it.
+
+Use the sample rate that matches the actual acquisition settings for the capture. Do not assume that a configured frequency or sample rate has been independently verified simply because the dashboard runs.
+
+**Safety note:** Keep the four-class live dashboard model separate from the five-class synthetic baseline. Back up existing prediction files before running any separate script that may overwrite results.
 
 ## Current Status
 
-**Implemented:**
+### Implemented and tested
 
-- Saved Random Forest and MLP classifiers
-- Synthetic datasets and stress-test utilities
-- SDR capture files and capture-analysis utilities
-- Feature-extraction scripts
-- Evaluation scripts and result visualizations
-- Four-class dashboard launch verified in the local environment
+- Random Forest and MLP model artifacts.
+- Synthetic datasets and stress-testing utilities.
+- Feature-extraction and evaluation scripts.
+- Four-class dashboard launch in the tested Windows environment.
+- Existing-capture analysis and fresh PlutoSDR capture analysis.
+- Five-class synthetic baseline training and held-out evaluation.
+- Five-class report and confusion-matrix exports.
+- Input-validation checks for missing capture selection and invalid sample rate.
 
-**Remaining validation work:**
+### Remaining validation work
 
-1. Align and verify feature definitions between training and inference.
-2. Validate the corrected feature pipeline without overwriting existing artifacts.
-3. Evaluate on independently captured and independently labelled signals.
-4. Verify real Zigbee-like and cellular-like ground truth.
-5. Confirm acquisition metadata, including sample rate and center frequency.
-6. Recalculate final metrics only after the evaluation protocol and labels are established.
-7. Verify installation and execution on a clean environment if portability is required.
+1. Verify feature definitions and preprocessing across all training and inference scripts.
+2. Confirm acquisition metadata against capture logs and actual hardware settings.
+3. Independently verify cellular-like and Zigbee-related ground-truth labels.
+4. Collect or identify independently labelled real captures for each target class.
+5. Evaluate using capture-aware train/test splits to reduce leakage between windows from the same capture.
+6. Report real-capture metrics separately from synthetic-data results.
+7. Confirm the final README instructions and required files on the submission environment.
 
 ## Conclusion
 
-RFRecon provides an experimental SDR classification pipeline combining feature extraction, Random Forest, MLP, and capture analysis. Existing results demonstrate promising performance on some saved benchmarks, but further validation is required before making claims about reliable real-world protocol identification.
+RFRecon_AI is an experimental SDR classification pipeline that combines I/Q signal processing, feature extraction, machine-learning models, PlutoSDR capture analysis, and evaluation utilities.
 
-The project distinguishes model predictions and synthetic stress-test results from independently verified real-world classification performance. This distinction is essential for interpreting the results responsibly.
+The current implementation demonstrates a working four-class capture-analysis dashboard and a separate five-class synthetic baseline. Further validation with consistent preprocessing, verified capture metadata, independently labelled real signals, and capture-aware evaluation is required before making claims about reliable real-world protocol identification.
