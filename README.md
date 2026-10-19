@@ -130,6 +130,44 @@ as a static diagram of the project. The diagram describes the intended
 workflow; the exact behavior of any script should be confirmed from that
 script and its current configuration.
 
+### Capture, training, prediction, and provenance workflow
+
+The following diagram separates the saved-I/Q capture path from the
+synthetic training/evaluation path and highlights the outstanding real-data
+provenance checks. The Random Forest branch shown here is the four-class
+prediction workflow; the synthetic dataset/evaluation path contains five
+configured categories. These paths should not be interpreted as evidence
+that real Zigbee or cellular ground truth has been verified.
+
+```mermaid
+flowchart TD
+    A["ADALM-PLUTO SDR / Saved IQ Capture"] --> B["IQ Capture Input"]
+    B --> C["Sample-Rate Validation"]
+    C --> D["IQ Windowing"]
+    D --> E["Consistent Feature Extraction"]
+    E --> F["10 RF Features"]
+    F --> G["Four-Class Random Forest"]
+
+    G --> H["Bluetooth-like"]
+    G --> I["Cellular-like"]
+    G --> J["Noise"]
+    G --> K["Wi-Fi-like"]
+    H --> L["Prediction Summary"]
+    I --> L
+    J --> L
+    K --> L
+    L --> M["Spectrum and Probability Charts"]
+
+    N["Separate Synthetic Dataset"] --> O["Five-Class Training and Evaluation"]
+    O --> P["Synthetic Confusion Matrix and Metrics"]
+    P --> Q["Zigbee-like Class: Synthetic Only"]
+
+    R["Real-data provenance audit"] -.-> S["Not yet verified"]
+    S -.-> T["Cellular acquisition settings"]
+    R -.-> U["No usable IQ in inspected archive"]
+    U -.-> V["Zigbee reference"]
+```
+
 ### Pipeline stages
 
 1.  **Input:** Use an existing I/Q capture or a dataset prepared for an
@@ -640,21 +678,32 @@ For defensible evaluation:
 -   Saved evaluation CSVs and comparison results.
 -   Streamlit dashboard and dashboard configuration.
 -   Project architecture and demo documentation.
+-   **Task 1 — Feature consistency audit:** Compared
+    `rfrecon_consistent_features.py`, `audit_feature_formulas.py`,
+    `audit_classifier_pipeline.py`, and existing feature extractors; the
+    audit documented differences that still need to be resolved in code.
+-   **Task 2 — Safe pipeline validation:** Completed read-only audits and
+    documented safe validation practices that preserve existing model and
+    result files.
+-   **Task 3 — Independent real-signal evaluation review:** Reviewed
+    capture independence, labels, and acquisition metadata; the audit
+    documented where the available evidence is insufficient to claim
+    independent real-signal validation.
+-   **Task 5 — Capture-aware splitting review:** Documented source-capture
+    identifiers and the need to prevent windows from the same capture
+    appearing in both training and test sets.
+-   **Task 6 — Final evaluation protocol:** Documented the required split
+    method, class-wise precision/recall/F1, confusion matrix, and
+    limitations.
+-   **Task 7 — Data provenance audit:** Documented source files, sample
+    rates, center frequencies, capture IDs, labels, and acquisition details
+    that remain unverified.
 
-### Remaining validation work
-
-1.  Align feature definitions between training and inference.
-2.  Validate the corrected feature pipeline without overwriting existing
-    artifacts.
-3.  Evaluate on independently captured and independently labelled
-    signals.
-4.  Verify the ground truth for real Zigbee-like and cellular-like
-    captures.
-5.  Use capture-aware splits to reduce window leakage.
-6.  Recalculate and document final metrics using a defined evaluation
-    protocol.
-7.  Record exact data provenance and acquisition metadata for each real
-    capture.
+The selected documentation and source-audit tasks (1, 2, 3, 5, 6, and 7)
+are complete and committed. Task 4 was intentionally skipped. Completing
+the audits does not mean the underlying feature discrepancies, real-signal
+ground truth, or independent-capture performance have all been verified
+or corrected.
 
 ------------------------------------------------------------------------
 
@@ -685,10 +734,18 @@ For defensible evaluation:
 RFRecon AI provides an experimental SDR workflow for extracting features
 from complex I/Q samples, comparing Random Forest and MLP predictions,
 examining existing capture data, and visualizing saved results through a
-Streamlit dashboard. Its reported results are useful for guiding further
-experiments, but reliable real-world protocol classification requires
-consistent feature extraction, independent captures, verified labels,
-and a leakage-resistant evaluation design.
+Streamlit dashboard. The documentation and source-audit work selected for
+Tasks 1, 2, 3, 5, 6, and 7 is complete. These audits make feature-pipeline
+differences, capture-independence concerns, evaluation requirements, and
+provenance gaps explicit; Task 4 was intentionally skipped.
+
+Completion of the audits is not the same as resolving every technical
+limitation. Feature formulas still need to be aligned and tested, and real
+Zigbee-like and cellular-like ground truth and independent-capture
+performance remain unverified where the available evidence is insufficient.
+Reliable real-world protocol classification requires consistent feature
+extraction, independent captures, verified labels, and a leakage-resistant
+evaluation design.
 
 **Project principle:** Treat predictions as hypotheses, preserve the
 provenance of every capture, and make performance claims only when the
